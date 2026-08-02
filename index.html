@@ -165,7 +165,7 @@
   }
   .work-card:hover { border-color: rgba(233,205,152,0.3); transform: translateY(-2px); }
   .work-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-  .work-card h3 { font-size: 1.15rem; }
+  .work-card h3 { font-size: 1.15rem; overflow-wrap: break-word; word-break: break-word; min-width: 0; flex: 1; }
   .work-status {
     flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 0.05em;
     text-transform: uppercase; font-weight: 600; padding: 5px 11px; border-radius: 100px;
@@ -174,7 +174,7 @@
   .status-live { background: rgba(111,207,151,0.14); color: #8FE0B0; border: 1px solid rgba(111,207,151,0.3); }
   .status-built { background: rgba(212,168,87,0.14); color: var(--gold-soft); border: 1px solid rgba(212,168,87,0.3); }
   .status-progress { background: rgba(211,121,143,0.14); color: #E6A0B3; border: 1px solid rgba(211,121,143,0.3); }
-  .work-card p { font-size: 0.94rem; color: rgba(251,243,234,0.68); line-height: 1.6; margin-bottom: 14px; }
+  .work-card p { font-size: 0.94rem; color: rgba(251,243,234,0.68); line-height: 1.6; margin-bottom: 14px; overflow-wrap: break-word; word-break: break-word; }
   .work-tags { display: flex; gap: 8px; flex-wrap: wrap; }
   .work-card { text-decoration: none; display: block; color: inherit; }
   .work-card.is-live { border-color: rgba(111,207,151,0.25); }
@@ -182,6 +182,7 @@
   .work-tags span {
     font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: rgba(251,243,234,0.45);
     padding: 4px 10px; border: 1px solid var(--line); border-radius: 100px;
+    overflow-wrap: break-word; word-break: break-word;
   }
   .work-visit {
     margin-top: 14px; display: inline-flex; align-items: center; gap: 6px;
@@ -209,16 +210,17 @@
   }
   .contact-card h2 { font-size: clamp(1.5rem, 4.5vw, 2.1rem); margin-bottom: 12px; }
   .contact-card p { color: rgba(251,243,234,0.68); font-size: 0.98rem; margin-bottom: 30px; max-width: 40ch; margin-left: auto; margin-right: auto; }
-  .contact-methods { display: flex; flex-direction: column; gap: 12px; max-width: 340px; margin: 0 auto; }
+  .contact-methods { display: flex; flex-direction: column; gap: 12px; max-width: 340px; width: 100%; margin: 0 auto; }
   .contact-method {
     display: flex; align-items: center; gap: 14px; padding: 15px 18px;
     border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--cream);
-    transition: all 0.2s ease; text-align: left;
+    transition: all 0.2s ease; text-align: left; width: 100%; box-sizing: border-box;
   }
   .contact-method:hover { border-color: var(--gold-soft); background: rgba(233,205,152,0.05); }
   .contact-method .ic { font-size: 1.2rem; flex-shrink: 0; }
+  .contact-method .cm-text { min-width: 0; flex: 1; }
   .contact-method .cm-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(251,243,234,0.5); font-family: 'JetBrains Mono', monospace; }
-  .contact-method .cm-value { font-size: 0.95rem; font-weight: 700; }
+  .contact-method .cm-value { font-size: 0.95rem; font-weight: 700; overflow-wrap: break-word; word-break: break-word; }
 
   /* ---------- FOOTER ---------- */
   footer {
@@ -379,21 +381,21 @@
     <div class="contact-methods">
       <a class="contact-method" href="mailto:hello@shariftechnologies.online">
         <span class="ic">✉</span>
-        <div>
+        <div class="cm-text">
           <div class="cm-label">Email</div>
           <div class="cm-value">hello@shariftechnologies.online</div>
         </div>
       </a>
       <a class="contact-method" href="https://wa.me/233537024244" target="_blank" rel="noopener">
         <span class="ic">↗</span>
-        <div>
+        <div class="cm-text">
           <div class="cm-label">WhatsApp</div>
           <div class="cm-value">+233 53 702 4244</div>
         </div>
       </a>
       <a class="contact-method" href="https://wa.me/233558569833" target="_blank" rel="noopener">
         <span class="ic">↗</span>
-        <div>
+        <div class="cm-text">
           <div class="cm-label">WhatsApp (alt)</div>
           <div class="cm-value">+233 55 856 9833</div>
         </div>
