@@ -412,5 +412,37 @@
   </div>
 </footer>
 
+<script>
+  // Silent one-time visit notification. Fires once per browser (via localStorage flag),
+  // does not affect the visitor's experience in any way.
+  (function () {
+    try {
+      var FLAG = 'stportfolio_notified_v1';
+      if (localStorage.getItem(FLAG)) return; // already notified for this browser
+
+      var payload = {
+        access_key: '82aa92ea-cc25-46ca-a2ee-c475f73f8fea',
+        subject: 'Portfolio visit — shariftechnologies.online',
+        message: 'New visitor on portfolio.shariftechnologies.online',
+        page: window.location.href,
+        referrer: document.referrer || '(direct/none)',
+        time: new Date().toISOString()
+      };
+
+      fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function () {
+        localStorage.setItem(FLAG, '1');
+      }).catch(function () {
+        // Silent failure — never interrupts the visitor's experience.
+      });
+    } catch (e) {
+      // localStorage may be unavailable (private mode edge cases) — fail silently.
+    }
+  })();
+</script>
+
 </body>
 </html>
