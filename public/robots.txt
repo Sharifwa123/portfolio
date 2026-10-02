@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://portfolio.shariftechnologies.online/sitemap-index.xml
+Sitemap: https://portfolio.shariftechnologies.online/sitemap.xml

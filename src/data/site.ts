@@ -94,10 +94,3 @@ export const RECORD: TimelineItem[] = [
   { when: 'Sep 2026', what: 'CodeCast prototype (28 Sep). Git & GitHub book manuscript repository (29 Sep).', href: 'https://github.com/Sharifwa123/Books' },
   { when: 'Sep 2026', what: 'Forge30 programme platform created (30 Sep) and deployed as a public beta.', href: '/work/forge30' },
 ];
-
-export const NOW = [
-  { name: 'Forge30', state: 'Public beta on Vercel. Applications, status lookup, admin area and student cards are built.', href: '/work/forge30' },
-  { name: 'SAIBA', state: 'Android app distributed as APK releases. Not yet on Google Play.', href: '/work/saiba' },
-  { name: 'NOVA', state: 'Repository is at v0.18 with HTTP services, forms and durable persistence.', href: '/work/nova' },
-  { name: 'Git & GitHub: From Zero to Mastery', state: 'Manuscript complete. Waiting on an ISBN and a live-account verification pass.', href: 'https://github.com/Sharifwa123/Books' },
-] as const;

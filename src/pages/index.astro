@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SITE, CAPABILITIES, APPROACH, RECORD, NOW } from '../data/site';
-import { FLAGSHIP, OTHER, OPEN_SOURCE } from '../data/projects';
+import { SITE, CAPABILITIES, APPROACH, RECORD } from '../data/site';
+import { OPEN_SOURCE } from '../data/projects';
+import { getProjects } from '../server/projects';
 import Icon from '../components/Icon.astro';
 import { getLinks, displayValue } from '../server/links';
 
@@ -9,14 +10,11 @@ export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
 const links = (await getLinks()).filter((l) => l.visible);
 
-const ledger = [
-  { slug: 'saiba', what: 'WhatsApp-first AI assistant platform', proof: 'Web platform · Android APK · billing, RAG, escalation' },
-  { slug: 'sink', what: 'Offline mesh messenger, end-to-end encrypted', proof: '43 engine tests · simulated multi-hop mesh' },
-  { slug: 'nova', what: 'Programming language, compiler and runtime', proof: 'On npm · 19 ADRs · zero dependencies' },
-  { slug: 'forge30', what: 'Developer-programme platform with QR student cards', proof: 'Public beta · six-viewport browser tests' },
-];
-const nameOf = (s: string) => FLAGSHIP.find((f) => f.slug === s)!.name;
-const tiers = ['Publishing', 'Experiment', 'Earlier work'] as const;
+const projects = await getProjects();
+const featured = projects.filter((p) => p.caseStudy);
+const others = projects.filter((p) => !p.caseStudy);
+const ledger = featured.filter((p) => p.proof).slice(0, 5);
+const nowItems = projects.filter((p) => p.now && p.nowNote);
 
 const jsonLd = [
   {
@@ -50,15 +48,15 @@ const jsonLd = [
         <a class="btn" href={SITE.github} rel="noopener">GitHub</a>
         <a class="btn" href="#contact">Contact</a>
       </div>
-      <div class="ledger rv" role="list" aria-label="Flagship work and its evidence">
+      {ledger.length > 0 && <div class="ledger rv" role="list" aria-label="Flagship work and its evidence">
         {ledger.map((l) => (
           <a class="ledger__row" role="listitem" href={`/work/${l.slug}`}>
-            <span class="ledger__name">{nameOf(l.slug)}</span>
-            <span class="ledger__what">{l.what}</span>
+            <span class="ledger__name">{l.name}</span>
+            <span class="ledger__what">{l.kind}</span>
             <span class="ledger__proof">{l.proof}</span>
           </a>
         ))}
-      </div>
+      </div>}
     </div>
   </section>
 
@@ -66,11 +64,11 @@ const jsonLd = [
     <div class="wrap sec__grid">
       <div class="sec__rail"><span class="label">01 · Work</span><h2 id="work-h">Selected work</h2></div>
       <div>
-        <p class="sec__intro rv">Four systems I built in 2026. Open any of them for the problem, the architecture, the decisions, and the limits.</p>
-        {FLAGSHIP.map((f) => (
+        <p class="sec__intro rv">Open any of these for the problem, the architecture, the decisions, and the limits.</p>
+        {featured.map((f, i) => (
           <article class="flag rv">
             <div>
-              <div class="flag__num">{f.index}</div>
+              <div class="flag__num">{String(i + 1).padStart(2, '0')}</div>
               <h3><a href={`/work/${f.slug}`}>{f.name}</a></h3>
               <p class="flag__kind">{f.kind}</p>
             </div>
@@ -87,15 +85,15 @@ const jsonLd = [
 
         <h3 class="label group-label">More work, in order of maturity</h3>
         <div class="minor rv">
-          {OTHER.map((p) => (
+          {others.map((p) => (
             <article class="minor__item">
               <div class="minor__meta">
                 <span class="minor__tier">{p.tier}</span>
-                <span class="status">{p.state}</span>
+                <span class="status" data-tone={p.status.tone}>{p.status.label}</span>
               </div>
               <h4>{p.href ? <a href={p.href} rel="noopener">{p.name}</a> : p.name}</h4>
-              <p>{p.line}</p>
-              <span class="minor__stack">{p.stack}</span>
+              <p>{p.summary}</p>
+              {p.stack.length > 0 && <span class="minor__stack">{p.stack.join(' · ')}</span>}
             </article>
           ))}
         </div>
@@ -146,15 +144,15 @@ const jsonLd = [
         </div>
         <p class="note">Six repositories chosen from the public account. Several other repositories are private and are not listed.</p>
 
-        <h3 class="label group-label">Working on now</h3>
+        {nowItems.length > 0 && <><h3 class="label group-label">Working on now</h3>
         <div class="now">
-          {NOW.map((n) => (
-            <a class="now__item rv" href={n.href}>
+          {nowItems.map((n) => (
+            <a class="now__item rv" href={n.caseStudy ? `/work/${n.slug}` : n.href || undefined}>
               <span class="now__name">{n.name}</span>
-              <span class="now__state">{n.state}</span>
+              <span class="now__state">{n.nowNote}</span>
             </a>
           ))}
-        </div>
+        </div></>}
 
         <h3 class="label group-label">Timeline</h3>
         <div class="rec">

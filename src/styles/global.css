@@ -431,3 +431,16 @@ dl, dd { margin: 0; }
   .bar--adm .bar__in { flex-wrap: wrap; height: auto; padding-block: var(--s-2); row-gap: var(--s-2); }
   .adm__nav { order: 3; width: 100%; justify-content: space-between; gap: var(--s-3); padding-bottom: var(--s-1); }
 }
+
+.status[data-tone='beta']::before { background: var(--accent); }
+.status[data-tone='idle']::before { background: var(--ink-3); }
+
+.pf { display: grid; gap: var(--s-6); max-width: 46rem; }
+.pf__set { border: 0; margin: 0; padding: var(--s-5); border-radius: var(--r-3); box-shadow: var(--raise-1); min-width: 0; }
+.pf__set legend { font: 600 var(--t-md) var(--sans); padding: 0 var(--s-2); }
+.pf__row { display: grid; gap: 0 var(--s-4); }
+@media (min-width: 40rem) { .pf__row { grid-template-columns: 1fr 1fr; } }
+.chk { display: flex; gap: var(--s-3); align-items: center; margin-bottom: var(--s-4); font-size: var(--t-sm); }
+.chk input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+.field select, .lrow select { width: 100%; padding: 0.7rem 0.9rem; border: 0; border-radius: var(--r-2); background: var(--bg); box-shadow: var(--inset-1); color: var(--ink); font: 400 var(--t-sm) var(--sans); }
+.field textarea { resize: vertical; }

@@ -1,0 +1,74 @@
+---
+import AdminBase from '../../../layouts/AdminBase.astro';
+import { audit, sameOrigin } from '../../../server/auth';
+import { DEFAULT_PROJECTS, TONES, getProjects, saveProjects, statusOnly } from '../../../server/projects';
+import { getStore } from '../../../server/store';
+
+export const prerender = false;
+
+let projects = await getProjects();
+let error = '';
+const ok = Astro.url.searchParams.get('ok') ?? '';
+
+if (Astro.request.method === 'POST') {
+  if (!sameOrigin(Astro.request)) return new Response('Blocked', { status: 403 });
+  const f = await Astro.request.formData();
+  const action = String(f.get('action') ?? '');
+  const slug = String(f.get('slug') ?? '');
+  const i = projects.findIndex((p) => p.slug === slug);
+  let done = '';
+  if (action === 'reset') { projects = DEFAULT_PROJECTS; done = 'reset'; await audit('project.reset'); }
+  else if (i >= 0) {
+    if (action === 'status') {
+      const st = statusOnly(f);
+      if (typeof st === 'string') error = st;
+      else { projects[i] = { ...projects[i], status: st }; done = 'status'; await audit('project.status', `${projects[i].name}: ${st.label}`); }
+    } else if (action === 'up' && i > 0) { [projects[i - 1], projects[i]] = [projects[i], projects[i - 1]]; done = 'moved'; }
+    else if (action === 'down' && i < projects.length - 1) { [projects[i + 1], projects[i]] = [projects[i], projects[i + 1]]; done = 'moved'; }
+    else if (action === 'delete') { await audit('project.delete', projects[i].name); projects.splice(i, 1); done = 'deleted'; }
+  }
+  if (done) { await saveProjects(projects); return Astro.redirect(`/admin/projects?ok=${done}`, 303); }
+}
+const msg: Record<string, string> = { status: 'Status updated.', moved: 'Order updated.', deleted: 'Project deleted.', reset: 'Projects reset to the defaults.', saved: 'Project saved.', added: 'Project added.' };
+---
+<AdminBase title="Projects" active="projects">
+  <div class="adm__top">
+    <div><p class="label">Selected work</p><h1>Projects</h1></div>
+    <a class="btn btn--primary" href="/admin/projects/edit">Add project <span class="arr" aria-hidden="true">+</span></a>
+  </div>
+  <p class="note" style="margin-bottom: var(--s-6)">Projects with a case study appear as featured work and get their own page. The rest appear under “More work”. Changes go live within about a minute.</p>
+  {!getStore().persistent && <div class="warn"><strong>Storage is not connected.</strong> Changes will not survive a restart. Add Upstash Redis in Vercel Storage.</div>}
+  {ok && msg[ok] && <div class="ok" role="status">{msg[ok]}</div>}
+  {error && <div class="err" role="alert">{error}</div>}
+
+  {projects.map((p, i) => (
+    <section class="lrow" data-hidden="false" aria-label={p.name}>
+      <div class="lrow__head">
+        <div class="lrow__fields" style="grid-template-columns: 1fr">
+          <div>
+            <h2 style="font: 600 var(--t-md) var(--sans); letter-spacing: 0">{p.name}</h2>
+            <p class="note" style="margin: var(--s-1) 0 0">{p.caseStudy ? 'Case study' : p.tier} · {p.caseStudy ? <a href={`/work/${p.slug}`} target="_blank" rel="noopener">/work/{p.slug}</a> : p.slug} · <span class="status" data-tone={p.status.tone}>{p.status.label}</span></p>
+          </div>
+        </div>
+      </div>
+      <form method="post" class="lrow__fields" style="align-items: end" autocomplete="off">
+        <input type="hidden" name="slug" value={p.slug} />
+        <div class="field" style="margin:0"><label class="label" for={`s-${p.slug}`}>Status</label><input id={`s-${p.slug}`} name="status_label" type="text" required maxlength="80" value={p.status.label} /></div>
+        <div style="display:flex; gap: var(--s-3); align-items: end; flex-wrap: wrap">
+          <div class="field" style="margin:0; flex:1; min-width: 11rem"><label class="label" for={`t-${p.slug}`}>Colour</label>
+            <select id={`t-${p.slug}`} name="status_tone">{TONES.map((t) => <option value={t.v} selected={t.v === p.status.tone}>{t.label}</option>)}</select></div>
+          <button class="btn" type="submit" name="action" value="status" style="min-height: 2.75rem">Update status</button>
+        </div>
+      </form>
+      <form method="post" class="lrow__act">
+        <input type="hidden" name="slug" value={p.slug} />
+        <a class="btn btn--primary" href={`/admin/projects/edit?slug=${p.slug}`}>Edit</a>
+        <button class="btn" type="submit" name="action" value="up" disabled={i === 0} aria-label={`Move ${p.name} up`}>↑</button>
+        <button class="btn" type="submit" name="action" value="down" disabled={i === projects.length - 1} aria-label={`Move ${p.name} down`}>↓</button>
+        <button class="btn btn--danger" type="submit" name="action" value="delete" data-confirm={`Delete “${p.name}”? This removes its page too.`}>Delete</button>
+      </form>
+    </section>
+  ))}
+  {!projects.length && <p class="empty">No projects. Add one, or reset to the defaults.</p>}
+  <form method="post"><button class="btn" type="submit" name="action" value="reset" data-confirm="Replace all projects with the defaults? Your edits will be lost.">Reset to defaults</button></form>
+</AdminBase>

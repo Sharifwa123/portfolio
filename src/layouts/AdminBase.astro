@@ -5,7 +5,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/500.css';
 import '@fontsource/jetbrains-mono/600.css';
 import '../styles/global.css';
-interface Props { title: string; nav?: boolean; active?: 'dashboard' | 'links' }
+interface Props { title: string; nav?: boolean; active?: 'dashboard' | 'projects' | 'links' }
 const { title, nav = true, active } = Astro.props;
 ---
 <!doctype html>
@@ -25,6 +25,7 @@ const { title, nav = true, active } = Astro.props;
         {nav && (
           <nav class="nav adm__nav" aria-label="Admin">
             <a href="/admin" aria-current={active === 'dashboard' ? 'true' : undefined}>Dashboard</a>
+            <a href="/admin/projects" aria-current={active === 'projects' ? 'true' : undefined}>Projects</a>
             <a href="/admin/links" aria-current={active === 'links' ? 'true' : undefined}>Links</a>
             <a href="/" target="_blank" rel="noopener">View site</a>
           </nav>

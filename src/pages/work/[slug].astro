@@ -1,16 +1,26 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { FLAGSHIP } from '../../data/projects';
+import { getProjects } from '../../server/projects';
 import { SITE } from '../../data/site';
 
-export function getStaticPaths() {
-  return FLAGSHIP.map((p, i) => ({ params: { slug: p.slug }, props: { p, next: FLAGSHIP[(i + 1) % FLAGSHIP.length] } }));
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+
+const all = (await getProjects()).filter((p) => p.caseStudy);
+const i = all.findIndex((p) => p.slug === Astro.params.slug);
+if (i < 0) {
+  Astro.response.status = 404;
+  Astro.response.headers.set('Cache-Control', 'no-store');
+  return Astro.rewrite('/404');
 }
-const { p, next } = Astro.props;
+const p = all[i];
+const next = all[(i + 1) % all.length];
 const path = `/work/${p.slug}`;
 const toc = [
-  ['problem', 'Problem'], ['built', 'What I built'], ['architecture', 'Architecture'], ['decisions', 'Decisions'], ['limits', 'Current state & limits'], ['links', 'Links'],
-];
+  ['problem', 'Problem', !!p.problem], ['built', 'What I built', p.built.length > 0], ['architecture', 'Architecture', !!p.architecture.tree],
+  ['decisions', 'Decisions', p.decisions.length > 0], ['limits', 'Current state & limits', p.limits.length > 0], ['links', 'Links', p.links.length > 0],
+].filter((t) => t[2]) as [string, string, boolean][];
+const desc = p.seo || p.summary;
 const jsonLd = [
   {
     '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -20,43 +30,45 @@ const jsonLd = [
       { '@type': 'ListItem', position: 3, name: p.name, item: `${SITE.url}${path}` },
     ],
   },
-  { '@context': 'https://schema.org', '@type': 'WebPage', name: `${p.name} — case study`, url: `${SITE.url}${path}`, description: p.seo, author: { '@id': `${SITE.url}/#person` }, inLanguage: 'en' },
+  { '@context': 'https://schema.org', '@type': 'WebPage', name: `${p.name} — case study`, url: `${SITE.url}${path}`, description: desc, author: { '@id': `${SITE.url}/#person` }, inLanguage: 'en' },
 ];
 ---
-<Base title={`${p.name}: ${p.kind} — Sharif Tingane Issah`} description={p.seo} path={path} type="article" jsonLd={jsonLd} progress>
+<Base title={`${p.name}${p.kind ? `: ${p.kind}` : ''} — Sharif Tingane Issah`} description={desc} path={path} type="article" jsonLd={jsonLd} progress>
   <div class="wrap">
     <header class="cs-head">
       <a class="back" href="/#work">← All work</a>
-      <div class="cs-head__meta"><span class="label">Case study {p.index}</span><span class="status" data-tone={p.status.tone}>{p.status.label}</span></div>
+      <div class="cs-head__meta"><span class="label">Case study {String(i + 1).padStart(2, '0')}</span><span class="status" data-tone={p.status.tone}>{p.status.label}</span></div>
       <h1>{p.name}</h1>
       <p class="cs-head__tag">{p.tagline}</p>
       <dl class="facts">
         {p.facts.map((f) => <div><dt>{f.k}</dt><dd>{f.v}</dd></div>)}
-        <div><dt>Stack</dt><dd>{p.stack.join(' · ')}</dd></div>
+        {p.stack.length > 0 && <div><dt>Stack</dt><dd>{p.stack.join(' · ')}</dd></div>}
       </dl>
     </header>
 
     <div class="cs">
       <nav class="toc" aria-label="On this page"><ol>{toc.map(([id, l]) => <li><a href={`#${id}`}>{l}</a></li>)}</ol></nav>
       <div class="prose">
-        <section id="problem"><h2>Problem</h2><p>{p.problem}</p></section>
-        <section id="built"><h2>What I built</h2><ul class="bul">{p.built.map((b) => <li>{b}</li>)}</ul></section>
-        <section id="architecture">
-          <h2>Architecture</h2>
-          <p class="code-cap">{p.architecture.caption}</p>
-          <pre class="code" tabindex="0"><code>{p.architecture.tree}</code></pre>
-          {p.architecture.note && <p class="note" style="white-space: pre-line">{p.architecture.note}</p>}
-        </section>
-        <section id="decisions"><h2>Engineering decisions</h2>
+        {p.problem && <section id="problem"><h2>Problem</h2><p>{p.problem}</p></section>}
+        {p.built.length > 0 && <section id="built"><h2>What I built</h2><ul class="bul">{p.built.map((b) => <li>{b}</li>)}</ul></section>}
+        {p.architecture.tree && (
+          <section id="architecture">
+            <h2>Architecture</h2>
+            {p.architecture.caption && <p class="code-cap">{p.architecture.caption}</p>}
+            <pre class="code" tabindex="0"><code>{p.architecture.tree}</code></pre>
+            {p.architecture.note && <p class="note" style="white-space: pre-line">{p.architecture.note}</p>}
+          </section>
+        )}
+        {p.decisions.length > 0 && <section id="decisions"><h2>Engineering decisions</h2>
           <div class="decisions">{p.decisions.map((d) => <div class="decision"><h3>{d.title}</h3><p>{d.body}</p></div>)}</div>
-        </section>
-        <section id="limits"><h2>Current state and limits</h2>
+        </section>}
+        {p.limits.length > 0 && <section id="limits"><h2>Current state and limits</h2>
           <div class="limits"><ul class="bul">{p.limits.map((l) => <li>{l}</li>)}</ul></div>
-        </section>
-        <section id="links"><h2>Links</h2>
+        </section>}
+        {p.links.length > 0 && <section id="links"><h2>Links</h2>
           <div class="cs-links">{p.links.map((l) => <a class="btn" href={l.href} rel="noopener">{l.label} <span class="arr" aria-hidden="true">↗</span></a>)}</div>
-        </section>
-        <div class="next"><a href="/#work"><span class="label">Back to</span><strong>All work</strong></a><a href={`/work/${next.slug}`}><span class="label">Next case study</span><strong>{next.name} →</strong></a></div>
+        </section>}
+        <div class="next"><a href="/#work"><span class="label">Back to</span><strong>All work</strong></a>{next.slug !== p.slug && <a href={`/work/${next.slug}`}><span class="label">Next case study</span><strong>{next.name} →</strong></a>}</div>
       </div>
     </div>
   </div>

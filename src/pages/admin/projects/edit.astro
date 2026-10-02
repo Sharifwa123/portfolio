@@ -1,0 +1,100 @@
+---
+import AdminBase from '../../../layouts/AdminBase.astro';
+import { audit, sameOrigin } from '../../../server/auth';
+import { MAX_PROJECTS, TIERS, TONES, decisionsText, factsText, getProjects, linksText, projectFromForm, saveProjects, toLines, type Project } from '../../../server/projects';
+
+export const prerender = false;
+
+const all = await getProjects();
+const slug = Astro.url.searchParams.get('slug') ?? '';
+const existing = all.find((p) => p.slug === slug);
+if (slug && !existing) return Astro.redirect('/admin/projects');
+
+let error = '';
+let draft: FormData | undefined;
+
+if (Astro.request.method === 'POST') {
+  if (!sameOrigin(Astro.request)) return new Response('Blocked', { status: 403 });
+  const f = await Astro.request.formData();
+  const r = projectFromForm(f, all, existing?.slug);
+  if (typeof r === 'string') { error = r; draft = f; }
+  else if (!existing && all.length >= MAX_PROJECTS) error = `You can have up to ${MAX_PROJECTS} projects.`;
+  else {
+    const next = existing ? all.map((p) => (p.slug === existing.slug ? r : p)) : [...all, r];
+    await saveProjects(next);
+    await audit(existing ? 'project.edit' : 'project.add', r.name);
+    return Astro.redirect(`/admin/projects?ok=${existing ? 'saved' : 'added'}`, 303);
+  }
+}
+
+// Field values: re-posted draft wins over stored values so a validation error never loses typing.
+const d = (k: string) => (draft ? String(draft.get(k) ?? '') : undefined);
+const e = existing;
+const v = {
+  name: d('name') ?? e?.name ?? '', slug: d('slug') ?? e?.slug ?? '', tier: d('tier') ?? e?.tier ?? 'Experiment', kind: d('kind') ?? e?.kind ?? '',
+  summary: d('summary') ?? e?.summary ?? '', st_label: d('status_label') ?? e?.status.label ?? '', st_tone: d('status_tone') ?? e?.status.tone ?? 'build',
+  stack: d('stack') ?? e?.stack.join(', ') ?? '', href: d('href') ?? e?.href ?? '', proof: d('proof') ?? e?.proof ?? '', nowNote: d('nowNote') ?? e?.nowNote ?? '',
+  now: draft ? draft.get('now') === 'on' : e?.now ?? false, caseStudy: draft ? draft.get('caseStudy') === 'on' : e?.caseStudy ?? false,
+  tagline: d('tagline') ?? e?.tagline ?? '', problem: d('problem') ?? e?.problem ?? '', facts: d('facts') ?? (e ? factsText(e.facts) : ''),
+  built: d('built') ?? (e ? toLines(e.built) : ''), arch_caption: d('arch_caption') ?? e?.architecture.caption ?? '', arch_tree: d('arch_tree') ?? e?.architecture.tree ?? '',
+  arch_note: d('arch_note') ?? e?.architecture.note ?? '', decisions: d('decisions') ?? (e ? decisionsText(e.decisions) : ''), limits: d('limits') ?? (e ? toLines(e.limits) : ''),
+  links: d('links') ?? (e ? linksText(e.links) : ''), seo: d('seo') ?? e?.seo ?? '',
+};
+---
+<AdminBase title={existing ? `Edit ${existing.name}` : 'Add project'} active="projects">
+  <div class="adm__top"><div><p class="label">Projects</p><h1>{existing ? `Edit ${existing.name}` : 'Add a project'}</h1></div><a class="btn" href="/admin/projects">← Back</a></div>
+  {error && <div class="err" role="alert">{error}</div>}
+
+  <form method="post" class="pf" autocomplete="off">
+    <fieldset class="pf__set">
+      <legend>Basics</legend>
+      <div class="field"><label class="label" for="name">Name</label><input id="name" name="name" type="text" required maxlength="80" value={v.name} /></div>
+      <div class="field"><label class="label" for="kind">What it is (one line)</label><input id="kind" name="kind" type="text" maxlength="100" value={v.kind} placeholder="Offline mesh messenger for Android" /></div>
+      <div class="field"><label class="label" for="summary">Summary</label><textarea id="summary" name="summary" rows="3" required maxlength="700">{v.summary}</textarea></div>
+      <div class="pf__row">
+        <div class="field"><label class="label" for="tier">Group on the site</label><select id="tier" name="tier">{TIERS.map((t) => <option selected={t === v.tier}>{t}</option>)}</select></div>
+        <div class="field"><label class="label" for="slug">URL slug</label><input id="slug" name="slug" type="text" maxlength="30" value={v.slug} placeholder="auto from name" /></div>
+      </div>
+      <div class="field"><label class="label" for="stack">Technologies (comma separated)</label><input id="stack" name="stack" type="text" maxlength="400" value={v.stack} placeholder="Kotlin, Compose, Room" /></div>
+      <div class="field"><label class="label" for="href">External link (optional)</label><input id="href" name="href" type="text" inputmode="url" maxlength="500" value={v.href} placeholder="https://github.com/…" /></div>
+    </fieldset>
+
+    <fieldset class="pf__set">
+      <legend>Status</legend>
+      <div class="pf__row">
+        <div class="field"><label class="label" for="status_label">Status text</label><input id="status_label" name="status_label" type="text" required maxlength="80" value={v.st_label} list="status-ideas" placeholder="Public beta" />
+          <datalist id="status-ideas"><option value="Live" /><option value="Public beta" /><option value="In development" /><option value="Early prototype" /><option value="Built · not public" /><option value="Paused" /><option value="Archived" /></datalist></div>
+        <div class="field"><label class="label" for="status_tone">Colour</label><select id="status_tone" name="status_tone">{TONES.map((t) => <option value={t.v} selected={t.v === v.st_tone}>{t.label}</option>)}</select></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="pf__set">
+      <legend>Home page extras</legend>
+      <div class="field"><label class="label" for="proof">Evidence line (shown in the hero list for case studies)</label><input id="proof" name="proof" type="text" maxlength="120" value={v.proof} placeholder="43 tests · simulated multi-hop mesh" /></div>
+      <label class="chk"><input type="checkbox" name="now" checked={v.now} /> Show in “Working on now”</label>
+      <div class="field"><label class="label" for="nowNote">Note for “Working on now”</label><input id="nowNote" name="nowNote" type="text" maxlength="220" value={v.nowNote} placeholder="Public beta on Vercel. Admin area built." /></div>
+    </fieldset>
+
+    <fieldset class="pf__set">
+      <legend>Case study page</legend>
+      <label class="chk"><input type="checkbox" name="caseStudy" checked={v.caseStudy} /> This project has its own case study page (and is featured)</label>
+      <p class="note" style="margin-top: 0">Only used when the box above is ticked. One item per line unless noted. Leave a section empty to hide it.</p>
+      <div class="field"><label class="label" for="tagline">Tagline</label><input id="tagline" name="tagline" type="text" maxlength="300" value={v.tagline} /></div>
+      <div class="field"><label class="label" for="facts">Facts: <span class="mono">Key: value</span></label><textarea id="facts" name="facts" rows="4">{v.facts}</textarea></div>
+      <div class="field"><label class="label" for="problem">Problem</label><textarea id="problem" name="problem" rows="4" maxlength="1500">{v.problem}</textarea></div>
+      <div class="field"><label class="label" for="built">What I built</label><textarea id="built" name="built" rows="6">{v.built}</textarea></div>
+      <div class="field"><label class="label" for="arch_caption">Architecture caption</label><input id="arch_caption" name="arch_caption" type="text" maxlength="120" value={v.arch_caption} /></div>
+      <div class="field"><label class="label" for="arch_tree">Architecture (monospace block, keeps your spacing)</label><textarea id="arch_tree" name="arch_tree" rows="8" class="mono" maxlength="3000">{v.arch_tree}</textarea></div>
+      <div class="field"><label class="label" for="arch_note">Architecture note</label><textarea id="arch_note" name="arch_note" rows="2" maxlength="600">{v.arch_note}</textarea></div>
+      <div class="field"><label class="label" for="decisions">Decisions: <span class="mono">Title :: explanation</span></label><textarea id="decisions" name="decisions" rows="6">{v.decisions}</textarea></div>
+      <div class="field"><label class="label" for="limits">Current state and limits</label><textarea id="limits" name="limits" rows="4">{v.limits}</textarea></div>
+      <div class="field"><label class="label" for="links">Links: <span class="mono">Label | https://…</span></label><textarea id="links" name="links" rows="3">{v.links}</textarea></div>
+      <div class="field"><label class="label" for="seo">Search description (optional, falls back to the summary)</label><input id="seo" name="seo" type="text" maxlength="200" value={v.seo} /></div>
+    </fieldset>
+
+    <div class="lrow__act" style="position: sticky; bottom: 0; padding-block: var(--s-4); background: var(--bg)">
+      <button class="btn btn--primary" type="submit">{existing ? 'Save changes' : 'Add project'}</button>
+      <a class="btn" href="/admin/projects">Cancel</a>
+    </div>
+  </form>
+</AdminBase>

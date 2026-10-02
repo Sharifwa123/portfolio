@@ -19,11 +19,11 @@ internal links and anchors, light/dark, desktop/mobile) against a dev server on 
 
 ## Structure
 
-- `src/data/` — all content. `projects.ts` holds the four case studies and the lesser work;
+- `src/data/` — seed content. `projects.ts` holds the default case studies and lesser work (editable later in `/admin`);
   `site.ts` holds identity, capabilities, approach, timeline and current work.
 - `src/styles/global.css` — the design system: tokens, elevation scale (flat / raised / inset),
   type scale, components. Neumorphic depth marks interaction and evidence, not every section.
-- `src/pages/` — `index`, `work/[slug]` (one page per case study) and `404`.
+- `src/pages/` — `index`, `work/[slug]` (rendered from the stored projects), `privacy`, `sitemap.xml` (built from the projects) and `404`.
 
 ## Content rules
 
@@ -37,6 +37,7 @@ Sign-in, a dashboard and link management, all server-rendered on Vercel.
 
 - **Dashboard:** page views, daily unique visitors, link clicks, top pages, referrers, countries,
   devices, a recent-activity log and a security log (sign-ins, link edits).
+- **Projects:** add, edit, reorder and delete every project, and change its status (text and colour) straight from the list. A project can be a featured case study with its own page, or a smaller entry under “More work”. The defaults in `src/data/projects.ts` seed the list; once you save in the admin, the stored version is used. “Reset to defaults” restores the seed.
 - **Links:** add, edit, reorder, hide and delete the links in the Contact section. Pick an icon
   from 50 presets (auto-chosen from the URL by default), paste your own SVG (sanitised to a strict
   shape allowlist), or point to an https image URL.
