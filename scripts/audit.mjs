@@ -1,10 +1,10 @@
 // Audits a running preview: console errors, broken internal links, horizontal overflow, screenshots.
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
-const BASE = process.env.BASE || 'http://localhost:4321';
+const BASE = process.env.BASE || 'http://localhost:4322';
 const OUT = process.env.OUT || 'audit-shots';
 mkdirSync(OUT, { recursive: true });
-const pages = ['/', '/work/saiba', '/work/sink', '/work/nova', '/work/forge30', '/nope'];
+const pages = ['/', '/privacy', '/work/saiba', '/work/sink', '/work/nova', '/work/forge30', '/nope'];
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 let bad = 0;
 for (const [name, vp, mobile] of [['desktop', { width: 1440, height: 900 }, false], ['mobile', { width: 390, height: 844 }, true]]) {
@@ -34,7 +34,7 @@ for (const [name, vp, mobile] of [['desktop', { width: 1440, height: 900 }, fals
 const ctx = await browser.newContext();
 const page = await ctx.newPage();
 const seen = new Set();
-for (const p of pages.slice(0, 5)) {
+for (const p of pages.slice(0, 6)) {
   await page.goto(BASE + p);
   const hrefs = await page.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')));
   for (const h of hrefs) {

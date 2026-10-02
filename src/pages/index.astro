@@ -2,6 +2,12 @@
 import Base from '../layouts/Base.astro';
 import { SITE, CAPABILITIES, APPROACH, RECORD, NOW } from '../data/site';
 import { FLAGSHIP, OTHER, OPEN_SOURCE } from '../data/projects';
+import Icon from '../components/Icon.astro';
+import { getLinks, displayValue } from '../server/links';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+const links = (await getLinks()).filter((l) => l.visible);
 
 const ledger = [
   { slug: 'saiba', what: 'WhatsApp-first AI assistant platform', proof: 'Web platform · Android APK · billing, RAG, escalation' },
@@ -183,9 +189,13 @@ const jsonLd = [
       <div>
         <p class="contact-lede rv">Tell me what you are building.</p>
         <div class="contact">
-          <a class="contact__row rv" href={`mailto:${SITE.email}`}><span class="label">Email</span><span class="contact__v">{SITE.email}</span></a>
-          <a class="contact__row rv" href={SITE.whatsapp.href} rel="noopener"><span class="label">WhatsApp</span><span class="contact__v">{SITE.whatsapp.label}</span></a>
-          <a class="contact__row rv" href={SITE.github} rel="noopener"><span class="label">GitHub</span><span class="contact__v">github.com/Sharifwa123</span></a>
+          {links.map((l) => (
+            <a class="contact__row rv" href={l.url} data-lid={l.id} rel={l.url.startsWith('http') ? 'noopener' : undefined}>
+              <span class="contact__ic"><Icon icon={l.icon} /></span>
+              <span class="label">{l.label}</span>
+              <span class="contact__v">{displayValue(l.url)}</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>

@@ -1,0 +1,102 @@
+---
+import AdminBase from '../../layouts/AdminBase.astro';
+import Icon from '../../components/Icon.astro';
+import IconPicker from '../../components/IconPicker.astro';
+import { sameOrigin, audit } from '../../server/auth';
+import { DEFAULT_LINKS, MAX_LINKS, displayValue, getLinks, iconFromForm, newId, normalizeUrl, saveLinks, validId, type LinkItem } from '../../server/links';
+import { getStore } from '../../server/store';
+
+export const prerender = false;
+
+let links = await getLinks();
+let error = '';
+const ok = Astro.url.searchParams.get('ok') ?? '';
+
+if (Astro.request.method === 'POST') {
+  if (!sameOrigin(Astro.request)) return new Response('Blocked', { status: 403 });
+  const f = await Astro.request.formData();
+  const get = (k: string) => String(f.get(k) ?? '');
+  const action = get('action');
+  const id = get('id');
+  const idx = links.findIndex((l) => l.id === id);
+
+  const readFields = () => {
+    const label = get('label').trim().slice(0, 60);
+    const url = normalizeUrl(get('url'));
+    if (!label) return 'Add a label.';
+    if (!url) return 'Enter a valid link: https://…, an email address, or a phone number.';
+    const icon = iconFromForm(get('icon'), get('svg'), get('img'), url);
+    if (typeof icon === 'string') return icon;
+    return { label, url, icon };
+  };
+
+  let done = '';
+  if (action === 'add') {
+    const r = readFields();
+    if (typeof r === 'string') error = r;
+    else if (links.length >= MAX_LINKS) error = `You can have up to ${MAX_LINKS} links.`;
+    else { links = [...links, { id: newId(), ...r, visible: true }]; done = 'added'; await audit('link.add', r.label); }
+  } else if (idx >= 0 && validId(id)) {
+    if (action === 'save') {
+      const r = readFields();
+      if (typeof r === 'string') error = r;
+      else { links[idx] = { ...links[idx], ...r }; done = 'saved'; await audit('link.edit', r.label); }
+    } else if (action === 'up' && idx > 0) { [links[idx - 1], links[idx]] = [links[idx], links[idx - 1]]; done = 'moved'; }
+    else if (action === 'down' && idx < links.length - 1) { [links[idx + 1], links[idx]] = [links[idx], links[idx + 1]]; done = 'moved'; }
+    else if (action === 'toggle') { links[idx].visible = !links[idx].visible; done = links[idx].visible ? 'shown' : 'hidden'; await audit('link.visibility', links[idx].label); }
+    else if (action === 'delete') { await audit('link.delete', links[idx].label); links.splice(idx, 1); done = 'deleted'; }
+  } else if (action === 'reset') { links = DEFAULT_LINKS; done = 'reset'; await audit('link.reset'); }
+
+  if (done) { await saveLinks(links); return Astro.redirect(`/admin/links?ok=${done}`, 303); }
+}
+
+const kind = (l: LinkItem) => (l.icon.kind === 'preset' ? l.icon.name : l.icon.kind === 'svg' ? 'custom-svg' : 'custom-img');
+const msg: Record<string, string> = { added: 'Link added.', saved: 'Link saved.', moved: 'Order updated.', shown: 'Link is now visible.', hidden: 'Link hidden from the site.', deleted: 'Link deleted.', reset: 'Links reset to defaults.' };
+---
+<AdminBase title="Links" active="links">
+  <div class="adm__top"><div><p class="label">Contact section</p><h1>Links</h1></div></div>
+  <p class="note" style="margin-bottom: var(--s-6)">These appear in the Contact section of the home page, in this order. Changes go live within about a minute.</p>
+  {!getStore().persistent && <div class="warn"><strong>Storage is not connected.</strong> Changes will not survive a restart. Add Upstash Redis in Vercel Storage.</div>}
+  {ok && msg[ok] && <div class="ok" role="status">{msg[ok]}</div>}
+  {error && <div class="err" role="alert">{error}</div>}
+
+  <section class="panel" aria-labelledby="add-h">
+    <h2 id="add-h">Add a link</h2>
+    <form method="post" class="lrow" autocomplete="off">
+      <input type="hidden" name="action" value="add" />
+      <div class="lrow__fields">
+        <div class="field"><label class="label" for="a-label">Label</label><input id="a-label" name="label" type="text" required maxlength="60" placeholder="LinkedIn" /></div>
+        <div class="field"><label class="label" for="a-url">Link</label><input id="a-url" name="url" type="text" inputmode="url" required maxlength="500" placeholder="https://… or name@example.com" /></div>
+      </div>
+      <details open><summary>Icon</summary><IconPicker prefix="a" value="auto" auto /></details>
+      <div class="lrow__act"><button class="btn btn--primary" type="submit">Add link</button></div>
+    </form>
+  </section>
+
+  <section class="panel" aria-labelledby="list-h">
+    <h2 id="list-h">Your links ({links.length})</h2>
+    {links.map((l, i) => (
+      <form method="post" class="lrow" data-hidden={String(!l.visible)} autocomplete="off">
+        <input type="hidden" name="id" value={l.id} />
+        <div class="lrow__head">
+          <span class="contact__ic"><Icon icon={l.icon} /></span>
+          <div class="lrow__fields">
+            <div class="field" style="margin:0"><label class="label" for={`l-${l.id}`}>Label</label><input id={`l-${l.id}`} name="label" type="text" required maxlength="60" value={l.label} /></div>
+            <div class="field" style="margin:0"><label class="label" for={`u-${l.id}`}>Link</label><input id={`u-${l.id}`} name="url" type="text" inputmode="url" required maxlength="500" value={l.url} /></div>
+          </div>
+        </div>
+        <p class="note" style="margin:0">{l.visible ? 'Visible' : 'Hidden'} · shows as {displayValue(l.url)}</p>
+        <details><summary>Change icon</summary><IconPicker prefix={l.id} value={kind(l)} svg={l.icon.kind === 'svg' ? l.icon.svg : ''} img={l.icon.kind === 'img' ? l.icon.src : ''} /></details>
+        <div class="lrow__act">
+          <button class="btn btn--primary" type="submit" name="action" value="save">Save</button>
+          <button class="btn" type="submit" name="action" value="up" disabled={i === 0} formnovalidate aria-label={`Move ${l.label} up`}>↑</button>
+          <button class="btn" type="submit" name="action" value="down" disabled={i === links.length - 1} formnovalidate aria-label={`Move ${l.label} down`}>↓</button>
+          <button class="btn" type="submit" name="action" value="toggle" formnovalidate>{l.visible ? 'Hide' : 'Show'}</button>
+          <button class="btn btn--danger" type="submit" name="action" value="delete" formnovalidate data-confirm={`Delete “${l.label}”?`}>Delete</button>
+        </div>
+      </form>
+    ))}
+    {!links.length && <p class="empty">No links. Add one above, or reset to the defaults.</p>}
+    <form method="post"><button class="btn" type="submit" name="action" value="reset" data-confirm="Replace all links with the defaults?">Reset to defaults</button></form>
+  </section>
+</AdminBase>

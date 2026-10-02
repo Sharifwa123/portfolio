@@ -1,0 +1,25 @@
+---
+import { ICONS } from '../data/icons';
+import Icon from './Icon.astro';
+interface Props { prefix: string; value: string; svg?: string; img?: string; auto?: boolean }
+const { prefix, value, svg = '', img = '', auto = false } = Astro.props;
+const names = Object.keys(ICONS);
+---
+<div class="ip">
+  <div class="ip__grid" role="radiogroup" aria-label="Icon">
+    {auto && (
+      <label class="ip__opt"><input type="radio" name="icon" value="auto" checked={value === 'auto'} /><span class="ip__tile ip__auto" title="Choose from the URL">Auto</span></label>
+    )}
+    {names.map((n) => (
+      <label class="ip__opt"><input type="radio" name="icon" value={n} checked={value === n} /><span class="ip__tile" title={ICONS[n].label}><Icon icon={{ kind: 'preset', name: n }} /><span class="sr">{ICONS[n].label}</span></span></label>
+    ))}
+    <label class="ip__opt"><input type="radio" name="icon" value="custom-svg" checked={value === 'custom-svg'} /><span class="ip__tile ip__auto" title="Paste your own SVG">SVG</span></label>
+    <label class="ip__opt"><input type="radio" name="icon" value="custom-img" checked={value === 'custom-img'} /><span class="ip__tile ip__auto" title="Use an image URL">IMG</span></label>
+  </div>
+  <div class="ip__custom">
+    <label class="label" for={`${prefix}-svg`}>Custom SVG (used when “SVG” is selected)</label>
+    <textarea id={`${prefix}-svg`} name="svg" rows="3" placeholder='<svg viewBox="0 0 24 24"><path d="…"/></svg>' maxlength="8000">{svg}</textarea>
+    <label class="label" for={`${prefix}-img`}>Custom image URL (used when “IMG” is selected)</label>
+    <input id={`${prefix}-img`} name="img" type="url" inputmode="url" placeholder="https://example.com/icon.png" value={img} maxlength="400" />
+  </div>
+</div>

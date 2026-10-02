@@ -1,0 +1,107 @@
+---
+import AdminBase from '../../layouts/AdminBase.astro';
+import { getStats } from '../../server/stats';
+import { getLinks, type LinkItem } from '../../server/links';
+import type { Stats } from '../../server/stats';
+import { getStore } from '../../server/store';
+
+export const prerender = false;
+
+const range = [7, 30, 90].includes(Number(Astro.url.searchParams.get('range'))) ? Number(Astro.url.searchParams.get('range')) : 30;
+const store = getStore();
+let s: Stats | undefined, links: LinkItem[] | undefined, failed = false;
+try { [s, links] = await Promise.all([getStats(range), getLinks()]); } catch { failed = true; }
+
+const fmt = new Intl.NumberFormat('en');
+const regions = new Intl.DisplayNames(['en'], { type: 'region' });
+const country = (c: string) => { try { return c === 'unknown' ? 'Unknown' : regions.of(c) ?? c; } catch { return c; } };
+const top = (o: Record<string, number>, n = 8) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n);
+const pct = (v: number, max: number) => `${max ? Math.max(3, Math.round((v / max) * 100)) : 0}%`;
+const when = (t: number) => new Date(t).toISOString().slice(0, 16).replace('T', ' ');
+const labelOf = (id?: string) => links?.find((l) => l.id === id)?.label ?? id ?? '';
+
+// Bar chart geometry
+const W = 640, H = 170, PL = 34, PB = 22, PT = 10;
+const maxV = s ? Math.max(1, ...s.days.map((d) => d.views)) : 1;
+const niceMax = (() => { const p = 10 ** Math.floor(Math.log10(maxV)); for (const m of [1, 2, 5, 10]) if (maxV <= m * p) return m * p; return maxV; })();
+const n = s?.days.length ?? 1;
+const slot = (W - PL) / n;
+const bw = Math.max(2, slot - Math.min(2, slot * 0.3));
+const bars = (s?.days ?? []).map((d, i) => {
+  const h = Math.max(d.views ? 2 : 0, (d.views / niceMax) * (H - PB - PT));
+  const x = PL + i * slot, y = H - PB - h, r = Math.min(4, h, bw / 2);
+  return { d, path: h ? `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + bw - r}Q${x + bw},${y} ${x + bw},${y + r}V${y + h}Z` : '' , x };
+});
+const pathMax = s ? Math.max(1, ...Object.values(s.paths)) : 1;
+---
+<AdminBase title="Dashboard" active="dashboard">
+  <div class="adm__top">
+    <div><p class="label">Overview</p><h1>Dashboard</h1></div>
+    <nav class="seg" aria-label="Range">
+      {[7, 30, 90].map((r) => <a href={`/admin?range=${r}`} aria-current={r === range ? 'true' : undefined}>{r} days</a>)}
+    </nav>
+  </div>
+
+  {!store.persistent && <div class="warn"><strong>Storage is not connected.</strong> Stats and links are kept in memory and will be lost on every deploy or restart. In Vercel, open Storage and add Upstash Redis, then redeploy. The variables <span class="mono">KV_REST_API_URL</span> and <span class="mono">KV_REST_API_TOKEN</span> are added for you.</div>}
+  {failed && <div class="err" role="alert">Could not read the store. Check the Redis connection.</div>}
+
+  {s && (<>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi__v">{fmt.format(s.views)}</div><div class="label kpi__k">Page views</div></div>
+      <div class="kpi"><div class="kpi__v">{fmt.format(s.visitorDays)}</div><div class="label kpi__k">Daily visitors</div></div>
+      <div class="kpi"><div class="kpi__v">{fmt.format(s.clicks)}</div><div class="label kpi__k">Link clicks</div></div>
+      <div class="kpi"><div class="kpi__v">{s.views ? (s.views / Math.max(1, s.days.filter((d) => d.views).length)).toFixed(1) : '0'}</div><div class="label kpi__k">Views per active day</div></div>
+    </div>
+
+    <section class="panel" aria-labelledby="c-h">
+      <h2 id="c-h">Page views per day, last {range} days</h2>
+      <svg class="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Bar chart of page views per day over the last ${range} days. Maximum ${fmt.format(maxV)}.`}>
+        <line class="ax" x1={PL} x2={W} y1={H - PB} y2={H - PB} />
+        <line class="ax" x1={PL} x2={W} y1={PT} y2={PT} />
+        <text x={PL - 6} y={PT + 4} text-anchor="end">{fmt.format(niceMax)}</text>
+        <text x={PL - 6} y={H - PB + 4} text-anchor="end">0</text>
+        {bars.map((b) => b.path && <path class="cbar" d={b.path}><title>{b.d.day}: {b.d.views} views, {b.d.visitors} visitors</title></path>)}
+        <text x={PL} y={H - 6}>{s.days[0].day.slice(5)}</text>
+        <text x={W} y={H - 6} text-anchor="end">{s.days[n - 1].day.slice(5)}</text>
+      </svg>
+      <details style="margin-top: var(--s-3)"><summary>View as table</summary>
+        <div class="tbl-wrap" style="margin-top: var(--s-3); max-height: 18rem; overflow-y: auto"><table class="tbl"><thead><tr><th>Day (UTC)</th><th>Views</th><th>Visitors</th></tr></thead><tbody>
+          {[...s.days].reverse().map((d) => <tr><td>{d.day}</td><td>{d.views}</td><td>{d.visitors}</td></tr>)}
+        </tbody></table></div>
+      </details>
+    </section>
+
+    <div class="cols">
+      <section class="panel"><h2>Top pages</h2>
+        <div class="bd">{top(s.paths).map(([k, v]) => <div class="bd__row" style={`--w:${pct(v, pathMax)}`}><span class="mono">{k}</span><span class="bd__n">{v}</span></div>)}
+        {!Object.keys(s.paths).length && <p class="empty">No views yet.</p>}</div></section>
+      <section class="panel"><h2>Link clicks</h2>
+        <div class="bd">{top(s.linkClicks).map(([k, v]) => <div class="bd__row" style={`--w:${pct(v, Math.max(...Object.values(s.linkClicks)))}`}><span>{labelOf(k)}</span><span class="bd__n">{v}</span></div>)}
+        {!Object.keys(s.linkClicks).length && <p class="empty">No clicks yet.</p>}</div></section>
+      <section class="panel"><h2>Referrers</h2>
+        <div class="bd">{top(s.refs).map(([k, v]) => <div class="bd__row" style={`--w:${pct(v, Math.max(...Object.values(s.refs)))}`}><span>{k}</span><span class="bd__n">{v}</span></div>)}
+        {!Object.keys(s.refs).length && <p class="empty">No external referrers yet.</p>}</div></section>
+      <section class="panel"><h2>Countries</h2>
+        <div class="bd">{top(s.countries).map(([k, v]) => <div class="bd__row" style={`--w:${pct(v, Math.max(...Object.values(s.countries)))}`}><span>{country(k)}</span><span class="bd__n">{v}</span></div>)}
+        {!Object.keys(s.countries).length && <p class="empty">No data yet.</p>}</div></section>
+      <section class="panel"><h2>Devices</h2>
+        <div class="bd">{top(s.devices).map(([k, v]) => <div class="bd__row" style={`--w:${pct(v, Math.max(...Object.values(s.devices)))}`}><span>{k}</span><span class="bd__n">{v}</span></div>)}
+        {!Object.keys(s.devices).length && <p class="empty">No data yet.</p>}</div></section>
+    </div>
+
+    <section class="panel"><h2>Recent activity</h2>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time (UTC)</th><th>Event</th><th>Page</th><th>From</th><th>Country</th><th>Device</th></tr></thead><tbody>
+        {s.log.map((e) => <tr><td>{when(e.t)}</td><td>{e.k === 'click' ? `click: ${labelOf(e.l)}` : 'view'}</td><td>{e.p}</td><td>{e.r || '·'}</td><td>{e.c}</td><td>{e.d}</td></tr>)}
+        {!s.log.length && <tr><td colspan="6">Nothing yet.</td></tr>}
+      </tbody></table></div>
+      <p class="note">Latest 100 events. Your own visits while signed in are not counted. Visitors who send Do Not Track are not counted.</p>
+    </section>
+
+    <section class="panel"><h2>Security log</h2>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time (UTC)</th><th>Event</th><th>Detail</th></tr></thead><tbody>
+        {s.audit.map((e) => <tr><td>{when(e.t)}</td><td>{e.e}</td><td>{e.d}</td></tr>)}
+        {!s.audit.length && <tr><td colspan="3">Nothing yet.</td></tr>}
+      </tbody></table></div>
+    </section>
+  </>)}
+</AdminBase>

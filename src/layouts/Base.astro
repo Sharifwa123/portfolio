@@ -65,6 +65,20 @@ const og = new URL('/og.png', SITE.url).toString();
     <Footer />
     <script is:inline>
       (function () {
+        if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl) return;
+        function send(o) {
+          var b = JSON.stringify(o);
+          try { if (navigator.sendBeacon) navigator.sendBeacon('/api/e', new Blob([b], { type: 'application/json' })); else fetch('/api/e', { method: 'POST', body: b, keepalive: true }); } catch (e) {}
+        }
+        send({ t: 'view', p: location.pathname, r: document.referrer });
+        document.addEventListener('click', function (e) {
+          var a = e.target.closest && e.target.closest('[data-lid]');
+          if (a) send({ t: 'click', id: a.getAttribute('data-lid'), p: location.pathname });
+        });
+      })();
+    </script>
+    <script is:inline>
+      (function () {
         var root = document.documentElement;
         function effective() { return root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
         var btn = document.getElementById('theme');

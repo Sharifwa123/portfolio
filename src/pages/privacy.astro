@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Privacy — Sharif Tingane Issah" description="What this site measures, what it does not, and how to opt out." path="/privacy">
+  <div class="wrap" style="padding-block: var(--s-8)">
+    <p class="label">Privacy</p>
+    <h1 style="font-size: var(--t-2xl); margin-block: var(--s-3) var(--s-6)">What this site measures</h1>
+    <div class="prose">
+      <section>
+        <p>This site counts visits so the owner can see which work gets read. It uses no cookies and no third-party analytics, and shows no ads.</p>
+      </section>
+      <section>
+        <h2>Recorded</h2>
+        <ul class="bul">
+          <li>The page viewed, such as the home page or a case study.</li>
+          <li>The referring website’s domain, if your browser sends one.</li>
+          <li>Your country, taken from the hosting provider’s coarse location header, and a device class (mobile, tablet or desktop).</li>
+          <li>Which link on the page was clicked.</li>
+          <li>A one-way daily hash, used only to estimate unique visitors per day and to limit abuse. It cannot be reversed and changes every day.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Never recorded</h2>
+        <ul class="bul">
+          <li>Your IP address, user-agent string, or any identifier that follows you across days or sites.</li>
+          <li>Anything you type, since the site has no forms.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Opting out</h2>
+        <p>Turn on “Do Not Track” or Global Privacy Control in your browser and nothing is sent. Bots are ignored.</p>
+      </section>
+    </div>
+  </div>
+</Base>
