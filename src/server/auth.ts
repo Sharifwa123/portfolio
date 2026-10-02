@@ -43,11 +43,21 @@ export function passwordOk(input: string): boolean {
   return timingSafeEqual(sha(input), sha(real)) && real.length >= 12;
 }
 
-/** Same-origin check for state-changing requests. */
+/**
+ * Same-origin check for state-changing requests. Browsers always send Origin on cross-site
+ * POSTs and page scripts cannot forge it, so we require its host to match the host the request
+ * was addressed to. Behind Vercel's proxy the URL's host/protocol can differ from what the
+ * browser used, so Host and X-Forwarded-Host are accepted too (protocol is deliberately ignored).
+ */
 export function sameOrigin(req: Request): boolean {
   const o = req.headers.get('origin');
   if (o && o !== 'null') {
-    try { return new URL(o).host === new URL(req.url).host; } catch { return false; }
+    let originHost: string;
+    try { originHost = new URL(o).host.toLowerCase(); } catch { return false; }
+    const hosts = [new URL(req.url).host, req.headers.get('host'), (req.headers.get('x-forwarded-host') ?? '').split(',')[0].trim()]
+      .filter(Boolean)
+      .map((h) => h!.toLowerCase());
+    return hosts.includes(originHost);
   }
   return req.headers.get('sec-fetch-site') === 'same-origin';
 }
