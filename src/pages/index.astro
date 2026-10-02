@@ -1,0 +1,193 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, CAPABILITIES, APPROACH, RECORD, NOW } from '../data/site';
+import { FLAGSHIP, OTHER, OPEN_SOURCE } from '../data/projects';
+
+const ledger = [
+  { slug: 'saiba', what: 'WhatsApp-first AI assistant platform', proof: 'Web platform · Android APK · billing, RAG, escalation' },
+  { slug: 'sink', what: 'Offline mesh messenger, end-to-end encrypted', proof: '43 engine tests · simulated multi-hop mesh' },
+  { slug: 'nova', what: 'Programming language, compiler and runtime', proof: 'On npm · 19 ADRs · zero dependencies' },
+  { slug: 'forge30', what: 'Developer-programme platform with QR student cards', proof: 'Public beta · six-viewport browser tests' },
+];
+const nameOf = (s: string) => FLAGSHIP.find((f) => f.slug === s)!.name;
+const tiers = ['Publishing', 'Experiment', 'Earlier work'] as const;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': `${SITE.url}/#person`,
+    name: SITE.name,
+    url: SITE.url,
+    jobTitle: 'Software engineer and founder',
+    description: SITE.description,
+    worksFor: { '@type': 'Organization', name: SITE.company.name, url: SITE.company.url },
+    address: { '@type': 'PostalAddress', addressLocality: 'Wenchi', addressRegion: 'Bono Region', addressCountry: 'GH' },
+    sameAs: [SITE.github],
+    knowsAbout: ['Software engineering', 'Applied AI', 'Cybersecurity', 'Programming languages', 'Android development'],
+  },
+  { '@context': 'https://schema.org', '@type': 'WebSite', '@id': `${SITE.url}/#site`, url: SITE.url, name: SITE.name, inLanguage: 'en', author: { '@id': `${SITE.url}/#person` } },
+];
+---
+<Base jsonLd={jsonLd}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="hero__eyebrow label rv">
+        <span>Founder, Sharif Technologies</span><span>{SITE.location}</span>
+      </p>
+      <h1 class="rv">Software engineer building <em>AI products</em>, secure offline systems and a programming language.</h1>
+      <p class="hero__lede rv">
+        I build and ship my own products end to end: a WhatsApp-first AI assistant platform, an encrypted messenger that works without internet, and a language with its own compiler. Each one is documented with what works, what does not, and how it was tested.
+      </p>
+      <div class="hero__cta rv">
+        <a class="btn btn--primary" href="#work">See the work <span class="arr" aria-hidden="true">→</span></a>
+        <a class="btn" href={SITE.github} rel="noopener">GitHub</a>
+        <a class="btn" href="#contact">Contact</a>
+      </div>
+      <div class="ledger rv" role="list" aria-label="Flagship work and its evidence">
+        {ledger.map((l) => (
+          <a class="ledger__row" role="listitem" href={`/work/${l.slug}`}>
+            <span class="ledger__name">{nameOf(l.slug)}</span>
+            <span class="ledger__what">{l.what}</span>
+            <span class="ledger__proof">{l.proof}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="work" aria-labelledby="work-h">
+    <div class="wrap sec__grid">
+      <div class="sec__rail"><span class="label">01 · Work</span><h2 id="work-h">Selected work</h2></div>
+      <div>
+        <p class="sec__intro rv">Four systems I built in 2026. Open any of them for the problem, the architecture, the decisions, and the limits.</p>
+        {FLAGSHIP.map((f) => (
+          <article class="flag rv">
+            <div>
+              <div class="flag__num">{f.index}</div>
+              <h3><a href={`/work/${f.slug}`}>{f.name}</a></h3>
+              <p class="flag__kind">{f.kind}</p>
+            </div>
+            <div class="flag__body">
+              <p class="flag__sum">{f.summary}</p>
+              <ul class="tags" aria-label="Technologies">{f.stack.slice(0, 6).map((s) => <li class="tag">{s}</li>)}</ul>
+              <div class="flag__foot">
+                <span class="status" data-tone={f.status.tone}>{f.status.label}</span>
+                <span class="go">Read case study <span class="arr" aria-hidden="true">→</span></span>
+              </div>
+            </div>
+          </article>
+        ))}
+
+        <h3 class="label group-label">More work, in order of maturity</h3>
+        <div class="minor rv">
+          {OTHER.map((p) => (
+            <article class="minor__item">
+              <div class="minor__meta">
+                <span class="minor__tier">{p.tier}</span>
+                <span class="status">{p.state}</span>
+              </div>
+              <h4>{p.href ? <a href={p.href} rel="noopener">{p.name}</a> : p.name}</h4>
+              <p>{p.line}</p>
+              <span class="minor__stack">{p.stack}</span>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="approach" aria-labelledby="approach-h">
+    <div class="wrap sec__grid">
+      <div class="sec__rail"><span class="label">02 · Approach</span><h2 id="approach-h">How I work</h2></div>
+      <div>
+        <div class="principles">
+          {APPROACH.map((a) => (
+            <div class="principle rv">
+              <h3>{a.title}</h3>
+              <p>{a.body}</p>
+              <a class="go" href={a.ref.href} rel={a.ref.href.startsWith('http') ? 'noopener' : undefined}>{a.ref.label} <span class="arr" aria-hidden="true">→</span></a>
+            </div>
+          ))}
+        </div>
+        <h3 class="label group-label">Capabilities, and where each is used</h3>
+        <div class="caps">
+          {CAPABILITIES.map((c) => (
+            <div class="cap rv">
+              <h3>{c.area}</h3>
+              <ul>{c.skills.map((s) => <li>{s}</li>)}</ul>
+              <span class="cap__used">{c.used}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="record" aria-labelledby="record-h">
+    <div class="wrap sec__grid">
+      <div class="sec__rail"><span class="label">03 · Record</span><h2 id="record-h">Public record</h2></div>
+      <div>
+        <h3 class="label" style="margin-bottom: var(--s-4)">Open source on GitHub</h3>
+        <div class="repos rv">
+          {OPEN_SOURCE.map((r) => (
+            <a class="repo" href={r.href} rel="noopener">
+              <span class="repo__name">{r.name}</span>
+              <span class="repo__lang">{r.lang}</span>
+              <span class="repo__note">{r.note}</span>
+            </a>
+          ))}
+        </div>
+        <p class="note">Six repositories chosen from the public account. Several other repositories are private and are not listed.</p>
+
+        <h3 class="label group-label">Working on now</h3>
+        <div class="now">
+          {NOW.map((n) => (
+            <a class="now__item rv" href={n.href}>
+              <span class="now__name">{n.name}</span>
+              <span class="now__state">{n.state}</span>
+            </a>
+          ))}
+        </div>
+
+        <h3 class="label group-label">Timeline</h3>
+        <div class="rec">
+          {RECORD.map((r) => (
+            <div class="rec__item rv">
+              <span class="rec__when">{r.when}</span>
+              <span class="rec__what">{r.what}{r.href && <> <a href={r.href} rel={r.href.startsWith('http') ? 'noopener' : undefined}>View</a></>}</span>
+            </div>
+          ))}
+        </div>
+        <p class="note">Dates are repository creation dates or dates written in the repositories’ own documents. They show when work became visible, not when it started.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="about" aria-labelledby="about-h">
+    <div class="wrap sec__grid">
+      <div class="sec__rail"><span class="label">04 · About</span><h2 id="about-h">About</h2></div>
+      <div class="about rv">
+        <p><strong>{SITE.name}</strong> is the founder of <a href={SITE.company.url} rel="noopener">{SITE.company.name}</a>, working from Wenchi in Ghana’s Bono Region and with clients remotely.</p>
+        <p>The company does software development, cybersecurity and IT training, with cloud setup and network support on request. The products on this page are the company’s own, and the same process applies to client work.</p>
+        <div class="svc tags" aria-label="Services">
+          <span class="tag">Software development</span><span class="tag">Cybersecurity</span><span class="tag">IT training</span><span class="tag">Cloud &amp; network</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="contact" aria-labelledby="contact-h">
+    <div class="wrap sec__grid">
+      <div class="sec__rail"><span class="label">05 · Contact</span><h2 id="contact-h">Contact</h2></div>
+      <div>
+        <p class="contact-lede rv">Tell me what you are building.</p>
+        <div class="contact">
+          <a class="contact__row rv" href={`mailto:${SITE.email}`}><span class="label">Email</span><span class="contact__v">{SITE.email}</span></a>
+          <a class="contact__row rv" href={SITE.whatsapp.href} rel="noopener"><span class="label">WhatsApp</span><span class="contact__v">{SITE.whatsapp.label}</span></a>
+          <a class="contact__row rv" href={SITE.github} rel="noopener"><span class="label">GitHub</span><span class="contact__v">github.com/Sharifwa123</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
