@@ -4,11 +4,17 @@ import { SITE, CAPABILITIES, APPROACH, RECORD } from '../data/site';
 import { OPEN_SOURCE } from '../data/projects';
 import { getProjects } from '../server/projects';
 import Icon from '../components/Icon.astro';
-import { getLinks, displayValue } from '../server/links';
+import { getLinks, displayValue, groupOf } from '../server/links';
+import { getProfile } from '../server/profile';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
-const links = (await getLinks()).filter((l) => l.visible);
+const profile = await getProfile();
+const allLinks = (await getLinks()).filter((l) => l.visible);
+const links = allLinks.filter((l) => groupOf(l) === 'contact');
+const profiles = allLinks.filter((l) => groupOf(l) === 'profile');
+const headParts = profile.headline.split('*');
+const aboutParas = profile.about.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
 
 const projects = await getProjects();
 const featured = projects.filter((p) => p.caseStudy);
@@ -23,26 +29,24 @@ const jsonLd = [
     '@id': `${SITE.url}/#person`,
     name: SITE.name,
     url: SITE.url,
-    jobTitle: 'Software engineer and founder',
-    description: SITE.description,
+    jobTitle: 'Founder',
+    description: profile.description,
     worksFor: { '@type': 'Organization', name: SITE.company.name, url: SITE.company.url },
     address: { '@type': 'PostalAddress', addressLocality: 'Wenchi', addressRegion: 'Bono Region', addressCountry: 'GH' },
-    sameAs: [SITE.github],
-    knowsAbout: ['Software engineering', 'Applied AI', 'Cybersecurity', 'Programming languages', 'Android development'],
+    sameAs: profiles.map((l) => l.url).filter((u) => u.startsWith('http')),
+    knowsAbout: ['Software engineering', 'Applied AI', 'Cybersecurity', 'Programming languages', 'Technology training', 'Technical writing'],
   },
   { '@context': 'https://schema.org', '@type': 'WebSite', '@id': `${SITE.url}/#site`, url: SITE.url, name: SITE.name, inLanguage: 'en', author: { '@id': `${SITE.url}/#person` } },
 ];
 ---
-<Base jsonLd={jsonLd}>
+<Base title={`${SITE.name} — ${profile.role}`} description={profile.description} jsonLd={jsonLd}>
   <section class="hero">
     <div class="wrap">
       <p class="hero__eyebrow label rv">
-        <span>Founder, Sharif Technologies</span><span>{SITE.location}</span>
+        <span>{profile.role}</span><span>{profile.location}</span>
       </p>
-      <h1 class="rv">Software engineer building <em>AI products</em>, secure offline systems and a programming language.</h1>
-      <p class="hero__lede rv">
-        I build and ship my own products end to end: a WhatsApp-first AI assistant platform, an encrypted messenger that works without internet, and a language with its own compiler. Each one is documented with what works, what does not, and how it was tested.
-      </p>
+      <h1 class="rv">{headParts.map((t, i) => (i % 2 ? <em>{t}</em> : t))}</h1>
+      <p class="hero__lede rv">{profile.lede}</p>
       <div class="hero__cta rv">
         <a class="btn btn--primary" href="#work">See the work <span class="arr" aria-hidden="true">→</span></a>
         <a class="btn" href={SITE.github} rel="noopener">GitHub</a>
@@ -132,6 +136,18 @@ const jsonLd = [
     <div class="wrap sec__grid">
       <div class="sec__rail"><span class="label">03 · Record</span><h2 id="record-h">Public record</h2></div>
       <div>
+        {profiles.length > 0 && <>
+          <h3 class="label" style="margin-bottom: var(--s-4)">Profiles</h3>
+          <div class="contact contact--grid" style="margin-bottom: var(--s-7)">
+            {profiles.map((l) => (
+              <a class="contact__row rv" href={l.url} data-lid={l.id} rel={l.url.startsWith('http') ? 'noopener' : undefined}>
+                <span class="contact__ic"><Icon icon={l.icon} /></span>
+                <span class="label">{l.label}</span>
+                <span class="contact__v">{displayValue(l.url)}</span>
+              </a>
+            ))}
+          </div>
+        </>}
         <h3 class="label" style="margin-bottom: var(--s-4)">Open source on GitHub</h3>
         <div class="repos rv">
           {OPEN_SOURCE.map((r) => (
@@ -172,10 +188,9 @@ const jsonLd = [
     <div class="wrap sec__grid">
       <div class="sec__rail"><span class="label">04 · About</span><h2 id="about-h">About</h2></div>
       <div class="about rv">
-        <p><strong>{SITE.name}</strong> is the founder of <a href={SITE.company.url} rel="noopener">{SITE.company.name}</a>, working from Wenchi in Ghana’s Bono Region and with clients remotely.</p>
-        <p>The company does software development, cybersecurity and IT training, with cloud setup and network support on request. The products on this page are the company’s own, and the same process applies to client work.</p>
+        {aboutParas.map((t) => <p>{t}</p>)}
         <div class="svc tags" aria-label="Services">
-          <span class="tag">Software development</span><span class="tag">Cybersecurity</span><span class="tag">IT training</span><span class="tag">Cloud &amp; network</span>
+          {profile.services.map((t) => <span class="tag">{t}</span>)}
         </div>
       </div>
     </div>

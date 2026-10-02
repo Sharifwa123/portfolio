@@ -2,14 +2,15 @@ export const SITE = {
   url: 'https://portfolio.shariftechnologies.online',
   name: 'Sharif Tingane Issah',
   short: 'Sharif T. Issah',
-  role: 'Software engineer · Founder, Sharif Technologies',
-  title: 'Sharif Tingane Issah — AI systems, secure offline software, language tooling',
+  role: 'Founder, Sharif Technologies',
+  title: 'Sharif Tingane Issah — Founder, Sharif Technologies',
   description:
-    'Software engineer and founder of Sharif Technologies in Ghana. Builds AI business platforms (SAIBA), end-to-end encrypted offline messaging (Sink) and a programming language (NOVA).',
+    'Founder of Sharif Technologies in Ghana. Builds AI products, secure offline messaging and a programming language, runs a developer programme, and is writing a technical book.',
   location: 'Wenchi, Bono Region, Ghana',
   company: { name: 'Sharif Technologies', url: 'https://www.shariftechnologies.online' },
   github: 'https://github.com/Sharifwa123',
-  email: 'hello@shariftechnologies.online',
+  email: 'sharifissah74@gmail.com',
+  companyEmail: 'hello@shariftechnologies.online',
   whatsapp: { label: '+233 53 702 4244', href: 'https://wa.me/233537024244' },
 } as const;
 

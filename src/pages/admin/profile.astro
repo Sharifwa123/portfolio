@@ -1,0 +1,52 @@
+---
+import AdminBase from '../../layouts/AdminBase.astro';
+import { audit, sameOrigin } from '../../server/auth';
+import { DEFAULT_PROFILE, getProfile, profileFromForm, saveProfile } from '../../server/profile';
+import { getStore } from '../../server/store';
+
+export const prerender = false;
+
+let p = await getProfile();
+let error = '';
+const ok = Astro.url.searchParams.get('ok') ?? '';
+if (Astro.request.method === 'POST') {
+  if (!sameOrigin(Astro.request)) return new Response('Blocked', { status: 403 });
+  const f = await Astro.request.formData();
+  if (f.get('action') === 'reset') {
+    await saveProfile(DEFAULT_PROFILE); await audit('profile.reset');
+    return Astro.redirect('/admin/profile?ok=reset', 303);
+  }
+  const r = profileFromForm(f);
+  if (typeof r === 'string') { error = r; p = { ...p, role: String(f.get('role') ?? ''), location: String(f.get('location') ?? ''), headline: String(f.get('headline') ?? ''), lede: String(f.get('lede') ?? ''), description: String(f.get('description') ?? ''), about: String(f.get('about') ?? ''), services: String(f.get('services') ?? '').split(',').map((x) => x.trim()).filter(Boolean) }; }
+  else { await saveProfile(r); await audit('profile.edit'); return Astro.redirect('/admin/profile?ok=saved', 303); }
+}
+---
+<AdminBase title="Profile" active="profile">
+  <div class="adm__top"><div><p class="label">Home page text</p><h1>Profile</h1></div></div>
+  <p class="note" style="margin-bottom: var(--s-6)">The headline, introduction, about text and search description. Changes go live within about a minute.</p>
+  {!getStore().persistent && <div class="warn"><strong>Storage is not connected.</strong> Changes will not survive a restart.</div>}
+  {ok && <div class="ok" role="status">{ok === 'reset' ? 'Profile reset to the defaults.' : 'Profile saved.'}</div>}
+  {error && <div class="err" role="alert">{error}</div>}
+  <form method="post" class="pf" autocomplete="off">
+    <fieldset class="pf__set">
+      <legend>Hero</legend>
+      <div class="pf__row">
+        <div class="field"><label class="label" for="role">Role line</label><input id="role" name="role" type="text" required maxlength="100" value={p.role} /></div>
+        <div class="field"><label class="label" for="location">Location</label><input id="location" name="location" type="text" maxlength="100" value={p.location} /></div>
+      </div>
+      <div class="field"><label class="label" for="headline">Headline (put *stars* around the highlighted words)</label><input id="headline" name="headline" type="text" required maxlength="160" value={p.headline} /></div>
+      <div class="field"><label class="label" for="lede">Introduction</label><textarea id="lede" name="lede" rows="4" required maxlength="600">{p.lede}</textarea></div>
+    </fieldset>
+    <fieldset class="pf__set">
+      <legend>About</legend>
+      <div class="field"><label class="label" for="about">About text (separate paragraphs with a blank line)</label><textarea id="about" name="about" rows="8" maxlength="2500">{p.about}</textarea></div>
+      <div class="field"><label class="label" for="services">Service tags (comma separated)</label><input id="services" name="services" type="text" maxlength="300" value={p.services.join(', ')} /></div>
+    </fieldset>
+    <fieldset class="pf__set">
+      <legend>Search and sharing</legend>
+      <div class="field"><label class="label" for="description">Description shown in search results (about 150 characters)</label><textarea id="description" name="description" rows="3" required maxlength="220">{p.description}</textarea></div>
+    </fieldset>
+    <div class="lrow__act"><button class="btn btn--primary" type="submit">Save profile</button></div>
+  </form>
+  <form method="post" style="margin-top: var(--s-6)"><button class="btn" type="submit" name="action" value="reset" data-confirm="Reset all profile text to the defaults?">Reset to defaults</button></form>
+</AdminBase>
