@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = false;
+---
+<Base title="Page not found — Sharif Tingane Issah" description="This page does not exist." path="/404" noindex>
+  <div class="wrap lost">
+    <span class="label">404</span>
+    <h1>That page is not here.</h1>
+    <p style="color: var(--ink-2); max-width: 32rem">The link may be old or mistyped. The work is on the home page.</p>
+    <p><a class="btn btn--primary" href="/">Back to the work <span class="arr" aria-hidden="true">→</span></a></p>
+  </div>
+</Base>

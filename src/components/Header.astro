@@ -1,0 +1,21 @@
+---
+import { NAV } from '../data/site';
+const onHome = Astro.url.pathname === '/';
+---
+<header class="bar">
+  <div class="wrap bar__in">
+    <a class="mark" href="/" aria-label="Sharif Tingane Issah, home">
+      <span class="mark__glyph" aria-hidden="true">S</span>
+      <span>Sharif T. Issah</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      {NAV.map((n) => <a href={n.href} data-spy={onHome ? n.id : undefined}>{n.label}</a>)}
+    </nav>
+    <button id="theme" class="iconbtn" type="button" aria-label="Dark theme" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>
+    </button>
+  </div>
+</header>
+<nav class="dock" aria-label="Sections">
+  {NAV.map((n) => <a href={n.href} data-spy={onHome ? n.id : undefined}>{n.label}</a>)}
+</nav>

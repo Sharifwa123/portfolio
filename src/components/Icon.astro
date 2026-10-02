@@ -1,0 +1,13 @@
+---
+import { ICONS } from '../data/icons';
+import { sanitizeSvg, type LinkIcon } from '../server/links';
+interface Props { icon: LinkIcon; size?: number }
+const { icon, size = 20 } = Astro.props;
+const def = icon.kind === 'preset' ? ICONS[icon.name] ?? ICONS.link : undefined;
+const svg = icon.kind === 'svg' ? sanitizeSvg(icon.svg) : null;
+---
+{def?.path && <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true" focusable="false"><path d={def.path} /></svg>}
+{def?.stroke && <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" set:html={def.stroke} />}
+{svg && <span class="icon-svg" style={`display:inline-flex;width:${size}px;height:${size}px`} set:html={svg} />}
+{icon.kind === 'img' && <img src={icon.src} alt="" width={size} height={size} loading="lazy" referrerpolicy="no-referrer" decoding="async" />}
+{icon.kind === 'svg' && !svg && <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" set:html={ICONS.link.stroke} />}

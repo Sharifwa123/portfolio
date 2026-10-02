@@ -1,0 +1,45 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/newsreader';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '../styles/global.css';
+interface Props { title: string; nav?: boolean; active?: 'dashboard' | 'projects' | 'links' }
+const { title, nav = true, active } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Admin</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>try { var t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+  </head>
+  <body>
+    <header class="bar bar--adm">
+      <div class="wrap bar__in">
+        <a class="mark" href="/admin"><span class="mark__glyph" aria-hidden="true">S</span><span>Admin</span></a>
+        {nav && (
+          <nav class="nav adm__nav" aria-label="Admin">
+            <a href="/admin" aria-current={active === 'dashboard' ? 'true' : undefined}>Dashboard</a>
+            <a href="/admin/projects" aria-current={active === 'projects' ? 'true' : undefined}>Projects</a>
+            <a href="/admin/links" aria-current={active === 'links' ? 'true' : undefined}>Links</a>
+            <a href="/" target="_blank" rel="noopener">View site</a>
+          </nav>
+        )}
+        {nav ? (
+          <form method="post" action="/admin/logout"><button class="btn" type="submit" style="min-height:2.5rem">Sign out</button></form>
+        ) : <span />}
+      </div>
+    </header>
+    <main id="main" class="wrap adm"><slot /></main>
+    <script is:inline>
+      document.addEventListener('submit', function (e) {
+        var b = e.submitter; if (b && b.dataset.confirm && !confirm(b.dataset.confirm)) e.preventDefault();
+      });
+    </script>
+  </body>
+</html>
