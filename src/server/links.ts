@@ -4,15 +4,23 @@ import { ICONS, guessIcon } from '../data/icons';
 import { getStore } from './store';
 
 export type LinkIcon = { kind: 'preset'; name: string } | { kind: 'svg'; svg: string } | { kind: 'img'; src: string };
-export interface LinkItem { id: string; label: string; url: string; icon: LinkIcon; visible: boolean }
+export type LinkGroup = 'contact' | 'profile';
+export const GROUPS: { v: LinkGroup; label: string }[] = [
+  { v: 'contact', label: 'Contact (Contact section)' },
+  { v: 'profile', label: 'Public profile (Public record section)' },
+];
+export interface LinkItem { id: string; label: string; url: string; icon: LinkIcon; visible: boolean; group?: LinkGroup }
+export const groupOf = (l: LinkItem): LinkGroup => (l.group === 'profile' ? 'profile' : 'contact');
 
 export const MAX_LINKS = 40;
 
 export const DEFAULT_LINKS: LinkItem[] = [
-  { id: 'email', label: 'Email', url: `mailto:${SITE.email}`, icon: { kind: 'preset', name: 'mail' }, visible: true },
-  { id: 'whatsapp', label: 'WhatsApp', url: SITE.whatsapp.href, icon: { kind: 'preset', name: 'whatsapp' }, visible: true },
-  { id: 'github', label: 'GitHub', url: SITE.github, icon: { kind: 'preset', name: 'github' }, visible: true },
-  { id: 'company', label: 'Sharif Technologies', url: SITE.company.url, icon: { kind: 'preset', name: 'globe' }, visible: true },
+  { id: 'email', label: 'Email', url: `mailto:${SITE.email}`, icon: { kind: 'preset', name: 'mail' }, visible: true, group: 'contact' },
+  { id: 'cmail', label: 'Company email', url: `mailto:${SITE.companyEmail}`, icon: { kind: 'preset', name: 'mail' }, visible: true, group: 'contact' },
+  { id: 'whatsapp', label: 'WhatsApp', url: SITE.whatsapp.href, icon: { kind: 'preset', name: 'whatsapp' }, visible: true, group: 'contact' },
+  { id: 'github', label: 'GitHub', url: SITE.github, icon: { kind: 'preset', name: 'github' }, visible: true, group: 'profile' },
+  { id: 'company', label: 'Sharif Technologies', url: SITE.company.url, icon: { kind: 'preset', name: 'globe' }, visible: true, group: 'profile' },
+  { id: 'npm', label: 'npm', url: 'https://www.npmjs.com/~sharif-technologies', icon: { kind: 'preset', name: 'npm' }, visible: true, group: 'profile' },
 ];
 
 export async function getLinks(): Promise<LinkItem[]> {

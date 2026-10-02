@@ -9,8 +9,8 @@ const og = mono(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="63
 <rect x="72" y="72" width="1056" height="486" rx="20" fill="#dde2e9" stroke="#c4ccd8" stroke-width="2"/>
 <text x="120" y="150" font-family="DejaVu Sans Mono, monospace" font-size="22" letter-spacing="3" fill="#566075">FOUNDER, SHARIF TECHNOLOGIES · GHANA</text>
 <text x="120" y="270" font-family="Georgia, serif" font-size="76" fill="#1a2130">Sharif Tingane Issah</text>
-<text x="120" y="350" font-family="Georgia, serif" font-size="38" fill="#404a5c">Software engineer building AI products,</text>
-<text x="120" y="398" font-family="Georgia, serif" font-size="38" fill="#404a5c">secure offline systems and a programming language.</text>
+<text x="120" y="350" font-family="Georgia, serif" font-size="38" fill="#404a5c">Founder building technology, securing it,</text>
+<text x="120" y="398" font-family="Georgia, serif" font-size="38" fill="#404a5c">and teaching it.</text>
 <line x1="120" y1="450" x2="1080" y2="450" stroke="#c4ccd8" stroke-width="2"/>
 <text x="120" y="505" font-family="DejaVu Sans Mono, monospace" font-size="24" fill="#0a5563">SAIBA  ·  Sink  ·  NOVA  ·  Forge30</text>
 </svg>`);

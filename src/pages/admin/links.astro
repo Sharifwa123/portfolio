@@ -3,7 +3,7 @@ import AdminBase from '../../layouts/AdminBase.astro';
 import Icon from '../../components/Icon.astro';
 import IconPicker from '../../components/IconPicker.astro';
 import { sameOrigin, audit } from '../../server/auth';
-import { DEFAULT_LINKS, MAX_LINKS, displayValue, getLinks, iconFromForm, newId, normalizeUrl, saveLinks, validId, type LinkItem } from '../../server/links';
+import { DEFAULT_LINKS, GROUPS, MAX_LINKS, groupOf, displayValue, getLinks, iconFromForm, newId, normalizeUrl, saveLinks, validId, type LinkItem } from '../../server/links';
 import { getStore } from '../../server/store';
 
 export const prerender = false;
@@ -27,7 +27,8 @@ if (Astro.request.method === 'POST') {
     if (!url) return 'Enter a valid link: https://…, an email address, or a phone number.';
     const icon = iconFromForm(get('icon'), get('svg'), get('img'), url);
     if (typeof icon === 'string') return icon;
-    return { label, url, icon };
+    const group = get('group') === 'profile' ? ('profile' as const) : ('contact' as const);
+    return { label, url, icon, group };
   };
 
   let done = '';
@@ -54,8 +55,8 @@ const kind = (l: LinkItem) => (l.icon.kind === 'preset' ? l.icon.name : l.icon.k
 const msg: Record<string, string> = { added: 'Link added.', saved: 'Link saved.', moved: 'Order updated.', shown: 'Link is now visible.', hidden: 'Link hidden from the site.', deleted: 'Link deleted.', reset: 'Links reset to defaults.' };
 ---
 <AdminBase title="Links" active="links">
-  <div class="adm__top"><div><p class="label">Contact section</p><h1>Links</h1></div></div>
-  <p class="note" style="margin-bottom: var(--s-6)">These appear in the Contact section of the home page, in this order. Changes go live within about a minute.</p>
+  <div class="adm__top"><div><p class="label">Contact and public profiles</p><h1>Links</h1></div></div>
+  <p class="note" style="margin-bottom: var(--s-6)">Contact links appear in the Contact section; public profile links (GitHub, LinkedIn, Facebook, ORCID, your websites…) appear under Public record. Each group follows the order below. Changes go live within about a minute.</p>
   {!getStore().persistent && <div class="warn"><strong>Storage is not connected.</strong> Changes will not survive a restart. Add Upstash Redis in Vercel Storage.</div>}
   {ok && msg[ok] && <div class="ok" role="status">{msg[ok]}</div>}
   {error && <div class="err" role="alert">{error}</div>}
@@ -68,6 +69,7 @@ const msg: Record<string, string> = { added: 'Link added.', saved: 'Link saved.'
         <div class="field"><label class="label" for="a-label">Label</label><input id="a-label" name="label" type="text" required maxlength="60" placeholder="LinkedIn" /></div>
         <div class="field"><label class="label" for="a-url">Link</label><input id="a-url" name="url" type="text" inputmode="url" required maxlength="500" placeholder="https://… or name@example.com" /></div>
       </div>
+      <div class="field"><label class="label" for="a-group">Show in</label><select id="a-group" name="group">{GROUPS.map((g) => <option value={g.v}>{g.label}</option>)}</select></div>
       <details open><summary>Icon</summary><IconPicker prefix="a" value="auto" auto /></details>
       <div class="lrow__act"><button class="btn btn--primary" type="submit">Add link</button></div>
     </form>
@@ -85,6 +87,7 @@ const msg: Record<string, string> = { added: 'Link added.', saved: 'Link saved.'
             <div class="field" style="margin:0"><label class="label" for={`u-${l.id}`}>Link</label><input id={`u-${l.id}`} name="url" type="text" inputmode="url" required maxlength="500" value={l.url} /></div>
           </div>
         </div>
+        <div class="field" style="margin:0"><label class="label" for={`g-${l.id}`}>Show in</label><select id={`g-${l.id}`} name="group">{GROUPS.map((g) => <option value={g.v} selected={g.v === groupOf(l)}>{g.label}</option>)}</select></div>
         <p class="note" style="margin:0">{l.visible ? 'Visible' : 'Hidden'} · shows as {displayValue(l.url)}</p>
         <details><summary>Change icon</summary><IconPicker prefix={l.id} value={kind(l)} svg={l.icon.kind === 'svg' ? l.icon.svg : ''} img={l.icon.kind === 'img' ? l.icon.src : ''} /></details>
         <div class="lrow__act">
